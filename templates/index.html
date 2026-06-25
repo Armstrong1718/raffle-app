@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Raffle Home{% endblock %}
+
+{% block content %}
+<h1>Welcome to the Raffle App! 🎉</h1>
+
+<div class="card">
+    <h2>Active Raffles</h2>
+    {% if active_raffles %}
+        <div class="grid">
+            {% for raffle in active_raffles %}
+            <div class="card" style="border: 2px solid #667eea;">
+                <h3>{{ raffle.title }}</h3>
+                <p><strong>Prize:</strong> {{ raffle.prize }}</p>
+                <p><strong>Ticket Price:</strong> ${{ "%.2f"|format(raffle.ticket_price) }}</p>
+                <p><strong>Drawing:</strong> {{ raffle.drawing_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><strong>Participants:</strong> {{ raffle.participants|length }}</p>
+                <a href="{{ url_for('raffle_detail', raffle_id=raffle.id) }}" class="btn">View Raffle</a>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No active raffles at the moment.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Upcoming Raffles</h2>
+    {% if upcoming_raffles %}
+        <div class="grid">
+            {% for raffle in upcoming_raffles %}
+            <div class="card" style="border: 2px solid #f39c12;">
+                <h3>{{ raffle.title }}</h3>
+                <p><strong>Prize:</strong> {{ raffle.prize }}</p>
+                <p><strong>Coming:</strong> {{ raffle.drawing_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><em>Registration opens soon!</em></p>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No upcoming raffles scheduled.</p>
+    {% endif %}
+</div>
+{% endblock %}

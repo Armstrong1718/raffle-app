@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{{ raffle.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .countdown {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+        text-align: center;
+        margin: 1rem 0;
+    }
+    
+    .entry-count {
+        background: #f0f0f0;
+        padding: 1rem;
+        border-radius: 5px;
+        text-align: center;
+        margin: 1rem 0;
+        font-size: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>{{ raffle.title }}</h1>
+    <p>{{ raffle.description }}</p>
+    
+    <div class="entry-count">
+        <strong>Current Entries:</strong> {{ total_entries }}
+        {% if raffle.max_entries %}<br>Max Entries: {{ raffle.max_entries }}{% endif %}
+    </div>
+    
+    <div class="countdown" id="countdown">Loading countdown...</div>
+    
+    <h3>Prize: {{ raffle.prize }}</h3>
+    <p><strong>Ticket Price:</strong> ${{ "%.2f"|format(raffle.ticket_price) }}</p>
+    
+    <h2>Payment Methods</h2>
+    <div id="payment-methods" class="card" style="background: #f9f9f9;">
+        <!-- Payment methods will be managed in admin -->
+        <p>Available payment options:</p>
+        <ul>
+            <li>💰 Bitcoin</li>
+            <li>💳 Chime</li>
+            <li>🅿️ PayPal</li>
+            <li>💵 Other methods</li>
+        </ul>
+        <p><em>Contact organizer for payment links or QR codes</em></p>
+    </div>
+    
+    <a href="{{ url_for('signup', raffle_id=raffle.id) }}" class="btn" style="width: 100%; text-align: center; padding: 1rem;">Sign Up Now!</a>
+    
+    {% if raffle.status == 'completed' %}
+    <div class="alert alert-success">
+        <h3>🎊 Drawing Complete!</h3>
+        <p><strong>Winner:</strong> {{ raffle.winner_name }}</p>
+    </div>
+    {% endif %}
+    
+    <a href="{{ url_for('drawing', raffle_id=raffle.id) }}" class="btn btn-secondary" style="width: 100%; text-align: center; padding: 1rem; margin-top: 1rem;">View Drawing</a>
+</div>
+
+<script>
+function updateCountdown() {
+    const drawingDate = new Date('{{ raffle.drawing_date.isoformat() }}').getTime();
+    
+    function calculate() {
+        const now = new Date().getTime();
+        const distance = drawingDate - now;
+        
+        if (distance < 0) {
+            document.getElementById('countdown').innerHTML = '🎊 Drawing Time!';
+            return;
+        }
+        
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        document.getElementById('countdown').innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    }
+    
+    calculate();
+    setInterval(calculate, 1000);
+}
+
+updateCountdown();
+</script>
+{% endblock %}

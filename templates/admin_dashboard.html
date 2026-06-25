@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .raffle-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+    }
+    
+    .raffle-table th, .raffle-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .raffle-table th {
+        background: #667eea;
+        color: white;
+    }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+    
+    .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 2rem;
+        border: 1px solid #888;
+        width: 90%;
+        max-width: 600px;
+        border-radius: 10px;
+    }
+    
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 2rem;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .close:hover {
+        color: black;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Admin Dashboard</h1>
+    <p>Welcome! Manage your raffles below.</p>
+    
+    <button class="btn" onclick="openCreateModal()">+ Create New Raffle</button>
+    <a href="{{ url_for('admin_logout') }}" class="btn btn-danger">Logout</a>
+</div>
+
+<div class="card">
+    <h2>Your Raffles</h2>
+    
+    {% if raffles %}
+    <table class="raffle-table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Prize</th>
+                <th>Participants</th>
+                <th>Status</th>
+                <th>Drawing Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for raffle in raffles %}
+            <tr>
+                <td>{{ raffle.title }}</td>
+                <td>{{ raffle.prize }}</td>
+                <td>{{ raffle.participants|length }}</td>
+                <td>{{ raffle.status }}</td>
+                <td>{{ raffle.drawing_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    <button class="btn" onclick="openEditModal({{ raffle.id }}, '{{ raffle.title }}', '{{ raffle.description }}', '{{ raffle.prize }}', '{{ raffle.status }}', '{{ raffle.drawing_date.isoformat() }}')" style="margin: 0.25rem;">Edit</button>
+                    <button class="btn btn-danger" onclick="deleteRaffle({{ raffle.id }})" style="margin: 0.25rem;">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No raffles yet. Create one to get started!</p>
+    {% endif %}
+</div>
+
+<!-- Create/Edit Modal -->
+<div id="raffleModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeRaffleModal()">&times;</span>
+        <h2 id="modalTitle">Create New Raffle</h2>
+        
+        <form id="raffleForm">
+            <div class="form-group">
+                <label for="title">Raffle Title</label>
+                <input type="text" id="title" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" rows="4"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="prize">Prize</label>
+                <input type="text" id="prize" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="ticketPrice">Ticket Price ($)</label>
+                <input type="number" id="ticketPrice" step="0.01" value="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="drawingDate">Drawing Date</label>
+                <input type="datetime-local" id="drawingDate" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status">
+                    <option value="upcoming">Upcoming</option>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn" style="width: 100%;">Save Raffle</button>
+        </form>
+    </div>
+</div>
+
+<script>
+let currentRaffleId = null;
+
+function openCreateModal() {
+    currentRaffleId = null;
+    document.getElementById('modalTitle').textContent = 'Create New Raffle';
+    document.getElementById('raffleForm').reset();
+    document.getElementById('raffleModal').style.display = 'block';
+}
+
+function openEditModal(id, title, description, prize, status, drawingDate) {
+    currentRaffleId = id;
+    document.getElementById('modalTitle').textContent = 'Edit Raffle';
+    document.getElementById('title').value = title;
+    document.getElementById('description').value = description;
+    document.getElementById('prize').value = prize;
+    document.getElementById('status').value = status;
+    document.getElementById('drawingDate').value = drawingDate.slice(0, 16);
+    document.getElementById('raffleModal').style.display = 'block';
+}
+
+function closeRaffleModal() {
+    document.getElementById('raffleModal').style.display = 'none';
+}
+
+document.getElementById('raffleForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const data = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        prize: document.getElementById('prize').value,
+        ticket_price: document.getElementById('ticketPrice').value,
+        status: document.getElementById('status').value,
+        drawing_date: document.getElementById('drawingDate').value
+    };
+    
+    let url;
+    if (currentRaffleId) {
+        url = `{{ url_for('admin_edit_raffle', raffle_id=0) }}`.replace('/0/edit', `/${currentRaffleId}/edit`);
+    } else {
+        url = '{{ url_for("admin_create_raffle") }}';
+    }
+    
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    
+    if (response.ok) {
+        location.reload();
+    } else {
+        alert('Error saving raffle');
+    }
+});
+
+async function deleteRaffle(id) {
+    if (confirm('Are you sure?')) {
+        const url = `{{ url_for('admin_delete_raffle', raffle_id=0) }}`.replace('/0', `/${id}`);
+        const response = await fetch(url, { method: 'DELETE' });
+        if (response.ok) {
+            location.reload();
+        }
+    }
+}
+
+window.onclick = (event) => {
+    const modal = document.getElementById('raffleModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+};
+</script>
+{% endblock %}

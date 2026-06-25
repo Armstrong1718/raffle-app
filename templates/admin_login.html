@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Login{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-form {
+        max-width: 400px;
+        margin: 5rem auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card login-form">
+    <h1>Admin Login</h1>
+    
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        
+        <button type="submit" class="btn" style="width: 100%;">Login</button>
+    </form>
+</div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const response = await fetch('{{ url_for("admin_do_login") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: document.getElementById('password').value })
+    });
+    
+    if (response.ok) {
+        window.location.href = '{{ url_for("admin_dashboard") }}';
+    } else {
+        alert('Invalid password');
+    }
+});
+</script>
+{% endblock %}

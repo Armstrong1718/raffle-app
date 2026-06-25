@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Drawing - {{ raffle.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .drawing-container {
+        text-align: center;
+        max-width: 600px;
+        margin: 2rem auto;
+    }
+    
+    .wheel {
+        width: 300px;
+        height: 300px;
+        margin: 2rem auto;
+        border-radius: 50%;
+        background: conic-gradient(from 0deg, #667eea 0deg 90deg, #764ba2 90deg 180deg, #f39c12 180deg 270deg, #e74c3c 270deg 360deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        animation: spin 5s linear infinite;
+        border: 5px solid white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .wheel.stopped {
+        animation: none;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .needle {
+        position: absolute;
+        top: -10px;
+        width: 0;
+        height: 0;
+        border-left: 15px solid transparent;
+        border-right: 15px solid transparent;
+        border-top: 30px solid #333;
+    }
+    
+    .winner-display {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+        margin: 2rem 0;
+        padding: 2rem;
+        background: #f0f0f0;
+        border-radius: 10px;
+        display: none;
+    }
+    
+    .participant-count {
+        font-size: 1.5rem;
+        margin: 1rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="drawing-container">
+    <h1>🎰 {{ raffle.title }} Drawing</h1>
+    
+    <div class="participant-count">
+        Participants: {{ participants|length }}
+    </div>
+    
+    <div style="position: relative; display: inline-block; margin: 2rem 0;">
+        <div class="needle"></div>
+        <div class="wheel" id="wheel">🎲</div>
+    </div>
+    
+    <button class="btn" id="drawBtn" onclick="startDrawing()">Start Drawing!</button>
+    
+    <div class="winner-display" id="winnerDisplay">
+        <h2>🎊 WINNER! 🎊</h2>
+        <p id="winnerName"></p>
+        <p id="winnerPhone"></p>
+        <p id="winnerEntries"></p>
+    </div>
+</div>
+
+<script>
+let isDrawing = false;
+
+async function startDrawing() {
+    if (isDrawing || {{ participants|length }} === 0) return;
+    
+    isDrawing = true;
+    document.getElementById('drawBtn').disabled = true;
+    
+    const wheel = document.getElementById('wheel');
+    wheel.classList.remove('stopped');
+    
+    // Spin for 3 seconds
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Call API to get winner
+    const response = await fetch('{{ url_for("api_draw", raffle_id=raffle.id) }}', {
+        method: 'POST'
+    });
+    
+    if (response.ok) {
+        const data = await response.json();
+        
+        // Stop wheel with random rotation
+        const finalRotation = Math.random() * 360;
+        wheel.style.animation = 'none';
+        wheel.style.transform = `rotate(${finalRotation}deg)`;
+        wheel.classList.add('stopped');
+        
+        // Show winner
+        setTimeout(() => {
+            document.getElementById('winnerName').textContent = `Winner: ${data.winner_name}`;
+            document.getElementById('winnerPhone').textContent = `Phone: ${data.winner_phone}`;
+            document.getElementById('winnerEntries').textContent = `Entries: ${data.entries}`;
+            document.getElementById('winnerDisplay').style.display = 'block';
+        }, 1000);
+    }
+    
+    isDrawing = false;
+}
+</script>
+{% endblock %}

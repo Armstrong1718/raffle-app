@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - {{ raffle.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .signup-form {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    .success-message {
+        display: none;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card signup-form">
+    <h1>Sign Up for {{ raffle.title }}</h1>
+    
+    <div class="alert alert-success success-message" id="successMessage">
+        ✅ You've successfully signed up!
+    </div>
+    
+    <form id="signupForm">
+        <div class="form-group">
+            <label for="name">Full Name *</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="phone">Phone Number *</label>
+            <input type="tel" id="phone" name="phone" placeholder="(555) 123-4567" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email">
+        </div>
+        
+        <div class="form-group">
+            <label for="entries">Number of Entries</label>
+            <input type="number" id="entries" name="entries" min="1" value="1">
+        </div>
+        
+        <button type="submit" class="btn" style="width: 100%; padding: 1rem;">Sign Up!</button>
+    </form>
+    
+    <a href="{{ url_for('raffle_detail', raffle_id=raffle.id) }}" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 1rem;">Back to Raffle</a>
+</div>
+
+<script>
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const data = {
+        name: document.getElementById('name').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('email').value,
+        entries: document.getElementById('entries').value
+    };
+    
+    const response = await fetch('{{ url_for("signup", raffle_id=raffle.id) }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    
+    if (response.ok) {
+        document.getElementById('signupForm').style.display = 'none';
+        document.getElementById('successMessage').style.display = 'block';
+    } else {
+        alert('Signup failed. Please try again.');
+    }
+});
+</script>
+{% endblock %}
